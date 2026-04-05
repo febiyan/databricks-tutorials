@@ -1,0 +1,43 @@
+bundle:
+  name: privacy_pipeline
+
+# ── Variables ────────────────────────────────────────────────────────────
+# Override per target with `databricks bundle deploy -t prod`
+variables:
+  catalog:
+    description: Unity Catalog catalog for pipeline output
+    default: main
+  schema:
+    description: Target schema for pipeline tables
+    default: privacy_tutorial
+
+# ── Include resource definitions ─────────────────────────────────────────
+include:
+  - "resources/*.yml"
+
+# ── Targets ──────────────────────────────────────────────────────────────
+targets:
+  dev:
+    default: true
+    mode: development
+    workspace:
+      # Replace with your Databricks workspace URL
+      host: https://<your-workspace-url>
+
+  staging:
+    workspace:
+      host: https://<your-workspace-url>
+    variables:
+      catalog: main
+      schema: privacy_tutorial_staging
+
+  prod:
+    mode: production
+    workspace:
+      host: https://<your-workspace-url>
+    variables:
+      catalog: main
+      schema: privacy_tutorial_prod
+    run_as:
+      # Use a service principal in production
+      service_principal_name: <your-service-principal>

@@ -1,0 +1,43 @@
+# ── Pipeline resource definition ─────────────────────────────────────────
+# This file defines the Lakeflow Spark Declarative Pipeline resource
+# for the Declarative Automation Bundle.
+
+resources:
+  pipelines:
+    privacy_pipeline:
+      name: "privacy-compliant-customers"
+      catalog: ${var.catalog}
+      target: ${var.schema}
+      libraries:
+        - file:
+            path: ./src/privacy_pipeline.py
+        - file:
+            path: ./src/pii_utils.py
+      channel: CURRENT
+      continuous: false
+      development: true
+      photon: true
+      configuration:
+        # Pipeline-level Spark config (optional)
+        spark.sql.shuffle.partitions: "8"
+
+  jobs:
+    privacy_pipeline_job:
+      name: "privacy-pipeline-scheduled"
+      schedule:
+        quartz_cron_expression: "0 0 8 * * ?"  # Daily at 08:00 UTC
+        timezone_id: UTC
+      tasks:
+        # ── Task 1: Run unit tests first ─────────────────────────────
+        - task_key: run_unit_tests
+          notebook_task:
+            notebook_path: ./tests/run_tests_notebook.py
+          # Uses serverless compute by default on Databricks Free
+
+        # ── Task 2: Refresh the pipeline (depends on tests passing) ──
+        - task_key: refresh_pipeline
+          depends_on:
+            - task_key: run_unit_tests
+          pipeline_task:
+            pipeline_id: ${resources.pipelines.privacy_pipeline.id}
+            full_refresh: false
