@@ -113,7 +113,7 @@ class TestEncryptPii:
     def test_null_value_returns_null(self):
         """NULL PII value must yield NULL output."""
         df = (
-            spark.createDataFrame([("C001", None)], ["customerID", "email_address"])
+            spark.createDataFrame([("C001", F.lit(None).cast("string"))], ["customerID", "email_address"])
             .withColumn("pii_key", derive_customer_key("customerID"))
         )
         result = df.select(encrypt_pii("email_address", "pii_key")).collect()[0][0]
